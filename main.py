@@ -13,7 +13,9 @@ HELLO_LIST = ['Welcome,', 'I’m glad to see you,', 'Hello there,',
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
 # Основные команды - git status - все изменения
-# Основные команды - git push
+# Основные команды - git add .
+# Основные команды - git commit -m 'first_try'
+
 
 @dp.message_handler(commands='start')
 async def cmd_start(message: types.Message):
