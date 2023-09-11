@@ -9,7 +9,7 @@ from aiogram.utils.executor import start_webhook
 # заходим в нужную папку (cd ..) и пишем python и название файла
 
 TOKEN = Config.TOKEN
-WEBHOOK_HOST = 'https://470c-176-120-190-90.ngrok-free.app'
+WEBHOOK_HOST = 'https://5a73-176-120-190-90.ngrok-free.app'
 WEBHOOK_PATH = f'/{TOKEN}'
 WEBHOOK_URL = f'{WEBHOOK_HOST}{WEBHOOK_PATH}'
 
@@ -65,11 +65,45 @@ async def list_tasks(message: types.Message):
     user_id = message.from_user.id
     conn = sqlite3.connect(db_filename)
     cursor = conn.cursor()
-    who = list(cursor.execute(
+    cursor.execute(
         'SELECT id, task_text FROM tasks WHERE user_id=?', (user_id,)
-    ))
+    )
+    tasks = cursor.fetchall()
     conn.close()
-    await message.answer('\n'.join([(': ').join(i) for i in [(str(i[0]), str(i[1])) for i in who]]))
+    if not tasks:
+        await message.answer('У вас нет заданий!')
+        return
+    list_tasks_new = '\n'.join(f"{task[0]}. {task[1]}" for task in tasks)
+    await message.answer(f'Ваши задания: \n\n{list_tasks_new}')
+
+
+@dp.message_handler(lambda message: message.text.startswith('/delete_task '))
+async def delete_tasks(message: types.Message):
+    user_id = message.from_user.id
+    task_number = message.text.replace('/delete_task ', '')
+
+    if not task_number:
+        await message.answer('Введи задачу для удаления цифрой')
+        return
+    task_number = int(task_number)
+
+    conn = sqlite3.connect(db_filename)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id, task_text FROM tasks WHERE user_id=? AND id = ?', (user_id, task_number)
+    )
+    task_exists = cursor.fetchone()
+
+    if not task_exists:
+        await message.answer('У вас нет такого задания!')
+    else:
+        cursor.execute(
+            'DELETE FROM tasks WHERE user_id=? AND id = ?', (user_id, task_number)
+        )
+        conn.commit()
+        await message.answer(f'Задача номер {task_number} успешно удалена')
+    conn.close()
+
 
 
 async def on_startup(dp):
