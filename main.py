@@ -9,11 +9,12 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
-@dp.message_handler(filters.IDFilter(chat_id=Config.SUPER_USER_IDS))
-@dp.message_handler(chat_id = Config.SUPER_USER_IDS)
-async def id_filters(message: types.Message):
-    await message.answer('Помню я тебя!')
+link_regexp = r'https://\S+$'
 
+
+@dp.message_handler(filters.Regexp(link_regexp))
+async def regexp_example(message: types.Message):
+    await message.answer('О, ссылка')
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
