@@ -1,3 +1,4 @@
+import sqlite3
 from config import Config
 import logging
 import requests
@@ -9,12 +10,24 @@ dp = Dispatcher(bot)
 logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
-link_regexp = r'https://\S+$'
+# Подключаемся
+conn = sqlite3.connect('users.db')
+cursor = conn.cursor()
+cursor.execute('''CREATE TABLE IF NOT EXISTS users (user_id INTEGER PRIMARY KEY, username TEXT)''')
+conn.commit()
 
 
-@dp.message_handler(filters.Regexp(link_regexp))
-async def regexp_example(message: types.Message):
-    await message.answer('О, ссылка')
+class UserManager:
+    @staticmethod
+    def is_user_exists(user_id):
+        cursor.execute('''SELECT user_id FROM users WHERE user_id = ?''', (user_id,))
+        return cursor.fetchone() is not None
+
+    @staticmethod
+    def add_user(user_id, username):
+        cursor.execute('''INSERT INTO users (user_id, username) VALUES (?, ?)''', (user_id, username))
+        conn.commit()
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
