@@ -1,4 +1,4 @@
 class Config:
-    TOKEN = '6624992385:AAEk1t9ufuKwkYcWLrMzJQHXqd3cJ3hSmCM'
+    TOKEN = '6444324425:AAHlxKZsNnBp3GOmUqh5LpUBlYvAqgdoTfI'
     KEY = 'c465369b9521e340aa8cf1965beadec3'
     SUPER_USER_IDS = '808197002'
