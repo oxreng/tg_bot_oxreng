@@ -5,6 +5,8 @@ btn_2 = KeyboardButton('Пока!')
 kb = ReplyKeyboardMarkup(resize_keyboard=True)
 kb.add(btn_1, btn_2)
 
+kb_hw = ReplyKeyboardMarkup(resize_keyboard=True).add(KeyboardButton('/add_bl')).add(KeyboardButton('/del_bl'))
+
 inline_btn_0 = InlineKeyboardButton('Первая кнопка', callback_data='button_0')
 inline_kb = InlineKeyboardMarkup()
 inline_kb.add(inline_btn_0)
