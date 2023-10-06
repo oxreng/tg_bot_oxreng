@@ -31,4 +31,8 @@ inline_kb_full.insert(InlineKeyboardButton('Yandex', url='https://www.yandex.ru'
 
 
 
+
+
+
+
 # kb.add(button_1)

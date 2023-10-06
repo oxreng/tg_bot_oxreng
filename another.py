@@ -114,40 +114,5 @@ async def process_product_count(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-@dp.message_handler(text='Посмотреть заказы')
-async def show_all_orders(message: types.Message, state: FSMContext):
-    cursor.execute('''SELECT * FROM orders''')
-    orders = cursor.fetchall()
-    order_list = [f'Номер заказа: {order[0]}, товар: {order[2]}, количество: {order[3]}' for order in orders]
-    if order_list:
-        await message.answer('\n'.join(order_list))
-    else:
-        await message.answer('Заказов нет')
-
-
-@dp.message_handler(text='Удалить заказ')
-async def del_id_order(messahe: types.Message):
-    await messahe.answer('Введите id заказа для удаления')
-    await OrderState.delete_order.set()
-
-
-@dp.message_handler(state=OrderState.delete_order)
-async def del_order(message: types.Message, state: FSMContext):
-    if not message.text.isdigit():
-        await message.answer('id должно быть числом')
-        return
-    order_id = message.text
-    cursor.execute('''SELECT id FROM orders WHERE id=?''', (order_id,))
-    order = cursor.fetchone()
-
-    if order is not None:
-        cursor.execute('''DELETE FROM orders WHERE id=?''', (order_id,))
-        conn.commit()
-        await message.answer('Заказ успешно удалён')
-    else:
-        await message.answer('Заказа нет в БД')
-    await state.finish()
-
-
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
