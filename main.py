@@ -22,131 +22,29 @@ logging.basicConfig(level=logging.INFO)
 dp.middleware.setup(LoggingMiddleware())
 
 
-def kb_1():
-    keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    btn_1 = KeyboardButton('Посмотреть товары')
-    btn_2 = KeyboardButton('Сделать заказ')
-    btn_3 = KeyboardButton('Удалить заказ')
-    btn_4 = KeyboardButton('Посмотреть заказы')
-    keyboard.add(btn_1, btn_2, btn_3, btn_4)
-    return keyboard
+@dp.message_handler(commands='start')
+async def start(message: types.Message):
+    await message.answer(f'Привет user {message.from_user.username}')
 
 
-initial_products = ['яблоки', 'груши', 'апельсины', 'киви', 'бананы', 'ананас']
-
-conn = sqlite3.connect('database.db')
-cursor = conn.cursor()
-cursor.execute('''CREATE TABLE IF NOT EXISTS products 
-                ( id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                name TEXT NOT NULL )''')
-
-for product in initial_products:
-    cursor.execute('''INSERT INTO products (name) VALUES (?)''', (product,))
-
-conn.commit()
-
-cursor.execute('''CREATE TABLE IF NOT EXISTS orders 
-                ( id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                user_id INTEGER,
-                name TEXT NOT NULL,
-                count INTEGER NOT NULL)''')
-conn.commit()
+@dp.message_handler(text='плохое слово')
+async def del_message(message: types.Message):
+    await message.delete()
 
 
-class OrderState(StatesGroup):
-    enter_product_name = State()
-    enter_product_count = State()
-    delete_order = State()
-
-
-@dp.message_handler(commands='start', state='*')
-async def cmd_start(message: types.Message, state: FSMContext):
-    await state.finish()
-    await message.answer('Здравствуйте, выберите действие', reply_markup=kb_1())
-
-
-@dp.message_handler(text='Посмотреть товары', state='*')
-async def show_products(message: types.Message):
-    conn = sqlite3.connect('database.db')
-    cursor = conn.cursor()
-    cursor.execute('''SELECT name FROM products''')
-    products = cursor.fetchall()
-    products_list = sorted(list(set([product[0] for product in products])))
-    await message.answer('\n'.join(products_list))
-
-
-@dp.message_handler(text='Сделать заказ')
-async def create_order(messahe: types.Message):
-    await messahe.answer('Введите название товара')
-    await OrderState.enter_product_name.set()
-
-
-@dp.message_handler(state=OrderState.enter_product_name)
-async def process_product_name(message: types.Message, state: FSMContext):
-    product = message.text.lower()
-    cursor.execute('''SELECT name FROM products''')
-    products = cursor.fetchall()
-    products_list = list(set([product_1[0] for product_1 in products]))
-    if product not in products_list:
-        await message.answer('Такого товара нет в списке')
+@dp.message_handler(content_types=types.ContentType.LEFT_CHAT_MEMBER)
+async def banned_member(message: types.Message):
+    if message.left_chat_member.id == message.from_user.id:
+        await message.answer(f'{message.left_chat_member.get_mention(as_html=True)} вышел из чата.')
+    elif message.from_user.id == 808197002:  # bot.get_me()
         return
-    async with state.proxy() as data:
-        data['product_name'] = product
-    await message.answer(f'Введи кол-во товара {data["product_name"]}')
-    await OrderState.next()
-
-
-@dp.message_handler(state=OrderState.enter_product_count)
-async def process_product_count(message: types.Message, state: FSMContext):
-    if not message.text.isdigit():
-        await message.answer('Введите число!')
-        return
-    async with state.proxy() as data:
-        product_name = data["product_name"]
-        product_count = message.text
-        cursor.execute('''SELECT id FROM products WHERE name=?''', (product_name,))
-        product = cursor.fetchone()
-        user_id = message.from_user.id
-        cursor.execute('''INSERT INTO orders (user_id, name, count) VALUES (?, ?, ?)''',
-                       (user_id, product_name, product_count))
-        conn.commit()
-        await message.answer('Ваш заказ в обработке')
-    await state.finish()
-
-
-@dp.message_handler(text='Посмотреть заказы')
-async def show_all_orders(message: types.Message, state: FSMContext):
-    cursor.execute('''SELECT * FROM orders''')
-    orders = cursor.fetchall()
-    order_list = [f'Номер заказа: {order[0]}, товар: {order[2]}, количество: {order[3]}' for order in orders]
-    if order_list:
-        await message.answer('\n'.join(order_list))
     else:
-        await message.answer('Заказов нет')
+        await message.reply(f'{message.left_chat_member.full_name} был удалён юзером {message.from_user.full_name}')
 
 
-@dp.message_handler(text='Удалить заказ')
-async def del_id_order(messahe: types.Message):
-    await messahe.answer('Введите id заказа для удаления')
-    await OrderState.delete_order.set()
-
-
-@dp.message_handler(state=OrderState.delete_order)
-async def del_order(message: types.Message, state: FSMContext):
-    if not message.text.isdigit():
-        await message.answer('id должно быть числом')
-        return
-    order_id = message.text
-    cursor.execute('''SELECT id FROM orders WHERE id=?''', (order_id,))
-    order = cursor.fetchone()
-
-    if order is not None:
-        cursor.execute('''DELETE FROM orders WHERE id=?''', (order_id,))
-        conn.commit()
-        await message.answer('Заказ успешно удалён')
-    else:
-        await message.answer('Заказа нет в БД')
-    await state.finish()
+@dp.message_handler(content_types=types.ContentType.NEW_CHAT_MEMBERS)
+async def new_members(message: types.Message):
+    await message.reply(f'Привет {message.new_chat_members[0].full_name}, добро пожаловать в чат, у нас не ругаются')
 
 
 if __name__ == '__main__':
